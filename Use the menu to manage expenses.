@@ -1,0 +1,107 @@
+import csv
+import os
+from datetime import datetime
+from tabulate import tabulate
+
+DATA_FILE = "expenses.csv"
+
+def init_file():
+    if not os.path.exists(DATA_FILE):
+        with open(DATA_FILE, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['Date', 'Category', 'Description', 'Amount'])
+
+def add_expense():
+    date = input("Enter date (YYYY-MM-DD): ")
+    category = input("Enter category (Food, Travel, Bills, etc.): ").capitalize()
+    description = input("Enter description: ")
+    try:
+        amount = float(input("Enter amount: "))
+    except ValueError:
+        print("Invalid amount.")
+        return
+    with open(DATA_FILE, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([date, category, description, amount])
+    print("✅ Expense added successfully.\n")
+
+def view_expenses():
+    with open(DATA_FILE, mode='r') as file:
+        reader = list(csv.reader(file))
+        if len(reader) <= 1:
+            print("No expenses found.")
+            return
+        print("\n📋 All Expenses:\n")
+        print(tabulate(reader[1:], headers=reader[0], tablefmt='grid'))
+
+def delete_expense():
+    view_expenses()
+    try:
+        row_num = int(input("Enter the row number to delete (starting from 1): "))
+    except ValueError:
+        print("Invalid input.")
+        return
+    with open(DATA_FILE, mode='r') as file:
+        rows = list(csv.reader(file))
+    if 1 <= row_num < len(rows):
+        deleted = rows.pop(row_num)
+        with open(DATA_FILE, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerows(rows)
+        print(f"✅ Deleted: {deleted}")
+    else:
+        print("Invalid row number.")
+
+def monthly_summary():
+    current_month = datetime.now().strftime("%Y-%m")
+    with open(DATA_FILE, mode='r') as file:
+        reader = csv.DictReader(file)
+        summary = {}
+        for row in reader:
+            if row['Date'].startswith(current_month):
+                category = row['Category']
+                amount = float(row['Amount'])
+                summary[category] = summary.get(category, 0) + amount
+        if not summary:
+            print("No expenses found for this month.")
+            return
+        print("\n📊 Monthly Summary:\n")
+        print(tabulate(summary.items(), headers=["Category", "Total Amount"], tablefmt='fancy_grid'))
+
+def export_data():
+    export_file = f"exported_expenses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    with open(DATA_FILE, mode='r') as read_file:
+        with open(export_file, mode='w', newline='') as write_file:
+            write_file.write(read_file.read())
+    print(f"📤 Data exported to {export_file}")
+
+def menu():
+    while True:
+        print("\n==== 🧾 Expense Tracker Menu ====")
+        print("1. Add Expense")
+        print("2. View All Expenses")
+        print("3. Delete an Expense")
+        print("4. Monthly Summary")
+        print("5. Export to CSV")
+        print("6. Exit")
+        choice = input("Select an option (1-6): ")
+
+        if choice == '1':
+            add_expense()
+        elif choice == '2':
+            view_expenses()
+        elif choice == '3':
+            delete_expense()
+        elif choice == '4':
+            monthly_summary()
+        elif choice == '5':
+            export_data()
+        elif choice == '6':
+            print("Goodbye! 👋")
+            break
+        else:
+            print("Invalid choice. Try again.")
+
+if __name__ == "__main__":
+    init_file()
+    menu()
